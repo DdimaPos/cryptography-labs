@@ -1,0 +1,258 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{amsmath} 
+\usepackage{fancyhdr} 
+\usepackage{geometry} 
+\usepackage{dirtytalk} 
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage{hyperref}
+\usepackage{listings}
+\lstset{
+    language=C,
+    basicstyle=\ttfamily, 
+    numberstyle=\tiny,
+    frame=single,
+    breaklines=true,
+}
+
+\begin{document}
+\begin{titlepage}
+\begin{center}
+    \includegraphics[width=0.3\textwidth]{image.png} \\[0.2cm]
+    
+    \textbf{MINISTRY OF EDUCATION, CULTURE AND RESEARCH 
+OF THE REPUBLIC OF MOLDOVA} \\[0.3cm]
+    
+    \textbf{Technical University of Moldova 
+Faculty of Computers, Informatics and Microelectronics 
+Department of Software and Automation Engineering} \\[2cm]
+    
+    \textbf{Postoronca Dumitru FAF-233}\\[0.5cm]
+    
+    \Huge \textbf{Report} \\[0.5cm]
+    
+    \large Laboratory work n.1 \\[0.5cm]
+    
+    \textbf{of CS} \\[3cm]
+    
+    \begin{flushright}
+        \textit{Checked by:} \\
+        \textbf{Olga Grosu}, \textit{university assistant} \\
+        DISA, FCIM, UTM
+    \end{flushright}
+    
+    \vfill
+    
+    Chișinău -- 2025
+\end{center}
+\end{titlepage}
+
+
+\newpage
+\setcounter{page}{1}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+\lhead{FAF-233 Postoronca Dumitru ; Laboratory Work №1}
+
+\section*{Purpose of Laboratory Work}
+\hspace{0.8cm} 
+
+In this laboratory work, I implemented the Caesar cipher, one of the simplest and most well-known 
+encryption techniques. The Caesar cipher is a substitution cipher in which each letter in the plaintext 
+is shifted by a fixed number of positions in the alphabet. For example, with a shift of three, the letter 
+\texttt{A} becomes \texttt{D}, \texttt{B} becomes \texttt{E}, and so on. Decryption is performed by shifting 
+in the opposite direction by the same fixed number.
+
+
+\section{Basic Implementation}
+The initial step of the laboratory consisted of designing a program that can both encrypt and decrypt 
+messages using a simple alphabet. The algorithm takes as input a message and a key value (the number 
+of positions to shift). Each character of the message is processed individually, replacing it with the 
+corresponding character in the shifted alphabet. Non-alphabetic symbols were excluded from 
+processing in order to keep the focus strictly on the defined alphabet.
+
+\section{Modification with Salt Word}
+After completing the basic version, the cipher was enhanced by introducing a \textit{salt word}. 
+The salt word alters the structure of the alphabet used in the substitution. Specifically, the letters of 
+the salt word are placed at the beginning of the alphabet (without duplication), followed by the 
+remaining unused letters in their normal order. The encryption and decryption processes are then 
+performed relative to this modified alphabet.
+
+This alteration makes the cipher more resistant to simple frequency analysis, as the substitution 
+is no longer based on a predictable shifted alphabet. Instead, the salt word introduces an additional 
+layer of complexity while still maintaining the core logic of the Caesar cipher.
+
+\section{Code Implementation and Explanation}
+
+In order to implement the Caesar cipher with the possibility of introducing a salt word, I wrote 
+a program in C++. The code defines both the encryption and decryption algorithms. Below is the 
+implementation:
+
+\begin{verbatim}
+#include <map>
+#include <set>
+#include <string>
+
+using namespace std;
+
+const array<char, 26> alphabet = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
+                                  'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
+                                  'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
+
+map<char, int> buildEncryptionMap(string salt) {
+  map<char, int> caesarMap;
+  set<char> used;
+
+  int index = 0;
+  for (char c : salt) {
+    caesarMap[c] = index++;
+    used.insert(c);
+  }
+
+  for (char c : alphabet) {
+    if (!used.count(c)) {
+      caesarMap[c] = index++;
+      used.insert(c);
+    }
+  }
+
+  return caesarMap;
+}
+
+map<int, char> buildDecryptionMap(map<char, int> inputMap) {
+  map<int, char> decrMap;
+
+  for (auto &[key, value] : inputMap) {
+    decrMap[value] = key;
+  }
+
+  return decrMap;
+}
+
+string encrypt(int key, string message, string salt) {
+  string encryptedString = "";
+  map<char, int> caesarMap = buildEncryptionMap(salt);
+  map<int, char> decryptionMap = buildDecryptionMap(caesarMap);
+
+  for (int i = 0; i < message.length(); i++) {
+    int messageCharIndex = caesarMap[message[i]];
+    int newIndex = (messageCharIndex + key) % 26;
+    encryptedString += decryptionMap[newIndex];
+  }
+
+  return encryptedString;
+}
+
+string decrypt(int key, string message, string salt) {
+  string decryptedString = "";
+  map<char, int> caesarMap = buildEncryptionMap(salt);
+  map<int, char> decryptionMap = buildDecryptionMap(caesarMap);
+
+  for (int i = 0; i < message.length(); i++) {
+    int messageCharIndex = caesarMap[message[i]];
+    int newIndex = (messageCharIndex - key + 26) % 26;
+    decryptedString += decryptionMap[newIndex];
+  }
+
+  return decryptedString;
+}
+\end{verbatim}
+
+\subsection{Explanation of the Code}
+
+The program is structured into several parts:
+
+\begin{itemize}
+    \item \textbf{Alphabet definition:} A fixed array of 26 uppercase English letters is defined 
+    as the base alphabet.
+
+    \item \textbf{Encryption map:} The function \texttt{buildEncryptionMap} constructs a mapping 
+    from characters to their positions. The salt word is inserted first, ensuring its characters 
+    appear at the beginning of the alphabet order. The remaining unused letters are then added.
+
+    \item \textbf{Decryption map:} The function \texttt{buildDecryptionMap} reverses the mapping, 
+    creating a correspondence from numeric positions back to characters.
+
+    \item \textbf{Encryption function:} The function \texttt{encrypt} takes a key, a message, and 
+    a salt word. Each character of the message is shifted by the key (modulo 26) relative to the 
+    salted alphabet, and the resulting encrypted message is constructed.
+
+    \item \textbf{Decryption function:} The function \texttt{decrypt} reverses the process by 
+    shifting in the opposite direction. The term \texttt{+26} is added before applying the 
+    modulo operation to ensure the index remains non-negative.
+\end{itemize}
+
+This modular design allows the program to easily switch between standard Caesar cipher and the 
+salted version, depending on whether the salt word is empty or provided. The result is a more 
+flexible and slightly more secure encryption mechanism compared to the traditional cipher.
+
+\subsection{User Input Handling}
+
+Besides the encryption and decryption logic, a set of functions was implemented in order to handle 
+user inputs. These functions ensure that the data entered by the user is correctly formatted and 
+valid for further processing by the algorithm. The implementation can be accessed at the following link:
+
+\begin{center}
+\url{https://github.com/DdimaPos/cryptography-labs/tree/main/Lab1}
+\end{center}
+
+The most important input-related functions are listed below:
+
+\begin{itemize}
+    \item \textbf{Operation selection:} The function \texttt{operationVariant} asks the user to 
+    choose between encryption and decryption. The input is read as a string, then converted into an 
+    integer value representing the operation.
+
+    \item \textbf{Key input:} The function \texttt{customKey} requests an integer key from the user. 
+    To ensure correctness, it applies the modulo operation with 26, limiting the effective key range 
+    to the size of the alphabet.
+
+    \item \textbf{Message parsing:} The functions \texttt{userMessage} and \texttt{tryParseMessage} 
+    work together to sanitize the input. The parsing step removes spaces, capitalizes lowercase letters, 
+    and ensures that only alphabetic characters are allowed. If invalid symbols are introduced, the user 
+    is asked to re-enter the message.
+
+    \item \textbf{Salt input:} The function \texttt{getSalt} handles the optional salt word. It verifies 
+    that the salt contains only alphabetic characters and has a minimum length of 7 symbols. All letters 
+    are converted to uppercase before being processed. If the input is invalid, the user is prompted to 
+    try again or can skip this step entirely by pressing Enter.
+\end{itemize}
+
+\noindent
+An example of the parsing logic is shown below:
+
+\begin{verbatim}
+string tryParseMessage(string raw) {
+  string parsed = "";
+  for (char symbol : raw) {
+    if (symbol == ' ')
+      continue;
+
+    if (symbol >= 'a' && symbol <= 'z') {
+      parsed += static_cast<char>(toupper(symbol));
+    } else if (symbol >= 'A' && symbol <= 'Z') {
+      parsed += symbol;
+    } else {
+      return ""; // invalid input
+    }
+  }
+  return parsed;
+}
+\end{verbatim}
+
+These additional functions make the program more user-friendly and robust, ensuring that 
+only valid and properly formatted input is passed into the encryption and decryption algorithms.
+
+
+
+\section*{Conclusions}
+\hspace{0.8cm} 
+The laboratory exercise provided practical experience with both classical cryptography and the 
+concept of extending a simple algorithm to improve its security. While the Caesar cipher itself 
+is not suitable for real-world applications due to its vulnerability, the modification with a salt word 
+demonstrates how small changes can significantly increase the complexity of an encryption method.
+\end{document}
