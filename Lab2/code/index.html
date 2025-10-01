@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Substitution Cipher Tool</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f0f2f5;
+      color: #333;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h2 {
+      text-align: center;
+      color: #1a253c;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 10px;
+    }
+
+    .container {
+      display: flex;
+      gap: 20px;
+      max-width: 1600px;
+      margin: auto;
+    }
+
+    .panel {
+      flex: 1;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    textarea {
+      width: 100%;
+      height: 400px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 1rem;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    #alphabet-map {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #alphabet-map label {
+      font-weight: bold;
+      font-size: 1.1rem;
+      text-align: right;
+    }
+
+    #alphabet-map input {
+      width: 50px;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    #outputText {
+      background-color: #e9ecef;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="panel">
+      <h2>Input Text</h2>
+      <textarea id="inputText" placeholder="Type or paste your text here..."></textarea>
+    </div>
+
+    <div class="panel">
+      <h2>Substitution Map</h2>
+      <div id="alphabet-map">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Output Text</h2>
+      <textarea id="outputText" readonly placeholder="Translated text will appear here..."></textarea>
+    </div>
+  </div>
+
+  <script>
+    const inputText = document.getElementById('inputText');
+    const outputText = document.getElementById('outputText');
+    const alphabetMapContainer = document.getElementById('alphabet-map');
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    alphabet.split('').forEach(letter => {
+      const label = document.createElement('label');
+      label.textContent = `${letter} →`;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 1;
+      input.dataset.original = letter;
+
+      input.addEventListener('input', translateText);
+
+      alphabetMapContainer.appendChild(label);
+      alphabetMapContainer.appendChild(input);
+    });
+
+    function translateText() {
+      const substitutionMap = {};
+      const mapInputs = alphabetMapContainer.querySelectorAll('input');
+
+      mapInputs.forEach(input => {
+        const originalLetter = input.dataset.original;
+        const newLetter = input.value;
+
+        if (newLetter) {
+          substitutionMap[originalLetter] = newLetter;
+          substitutionMap[originalLetter.toLowerCase()] = newLetter.toLowerCase();
+        }
+      });
+
+      const sourceText = inputText.value;
+
+      const translatedText = sourceText
+        .split('')
+        .map(char => {
+          return substitutionMap[char] ? substitutionMap[char].toLowerCase() : char.toUpperCase();
+        })
+        .join('');
+
+      outputText.value = translatedText;
+    }
+
+    inputText.addEventListener('input', translateText);
+  </script>
+
+</body>
+
+</html>
