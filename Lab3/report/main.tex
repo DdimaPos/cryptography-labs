@@ -1,0 +1,308 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{geometry}
+\usepackage{dirtytalk}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Define colors for listings
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstset{
+    language=C++,
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{black},
+    title=\lstname
+}
+
+
+\begin{document}
+\begin{titlepage}
+\begin{center}
+    \includegraphics[width=0.3\textwidth]{image.png} \\[0.2cm]
+    
+    \textbf{MINISTRY OF EDUCATION, CULTURE AND RESEARCH 
+OF THE REPUBLIC OF MOLDOVA} \\[0.3cm]
+    
+    \textbf{Technical University of Moldova 
+Faculty of Computers, Informatics and Microelectronics 
+Department of Software and Automation Engineering} \\[2cm]
+    
+    \textbf{Postoronca Dumitru FAF-233}\\[0.5cm]
+    
+    \Huge \textbf{Report} \\[0.5cm]
+    
+    \large Laboratory work n.3 \\[0.5cm]
+    
+    \textbf{on CS} \\[3cm]
+    
+    \begin{flushright}
+        \textit{Checked by:} \\
+        \textbf{M. Zaica}, \textit{university assistant} \\
+        DISA, FCIM, UTM
+    \end{flushright}
+    
+    \vfill
+    
+    Chișinău -- 2025
+\end{center}
+\end{titlepage}
+
+
+\newpage
+\setcounter{page}{1}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+\lhead{FAF-233 Postoronca Dumitru ; Laboratory Work №3}
+
+\section{Purpose of the Laboratory Work}
+The purpose of this laboratory work was to study the Vigenère cipher, a classic example of a polyalphabetic 
+substitution cipher. Unlike simple substitution ciphers that are vulnerable to basic frequency analysis, the
+Vigenère cipher uses a keyword to shift letters by different amounts, effectively obscuring the standard letter 
+frequency patterns of the plaintext language. The goal was to understand the mechanics of this cipher and to 
+implement a C++ program capable of both encrypting and decrypting messages using a custom alphabet, specifically 
+the Romanian alphabet which includes diacritics.
+
+\section{Strategy Used}
+To complete this task, I have developed a C++ program that performs Vigenère encryption and decryption.
+The program is designed to be interactive, prompting the user for the desired operation, a key, and a message.
+
+\begin{itemize}
+    \item \textbf{Operation Selection:} The user chooses to either encrypt or decrypt a message.
+    \item \textbf{Key Input:} The user provides a keyword, which must be at least 7 characters long.
+    \item \textbf{Message Input:} The user enters the plaintext to be encrypted or the ciphertext to be decrypted.
+\end{itemize}
+
+The core of the strategy revolves around several key steps: defining a specific alphabet, normalizing user input to match this alphabet, handling multi-byte UTF-8 characters correctly, and applying the mathematical logic of the Vigenère cipher.
+
+\subsection{Implementation Details}
+The program is built around a few core functions that handle text processing and the cryptographic logic.
+
+\subsubsection{Alphabet and Character Mapping}
+A custom alphabet (`ALFABET`) was defined to include all characters of the Romanian language, including diacritics (Ă, Â, Î, Ș, Ț). This results in an alphabet of 31 characters. A map (unordered\_map\textless string, int\textgreater) is used to associate each character with a unique integer index from 0 to 30, which is necessary for the mathematical calculations.
+
+\subsubsection{Text Normalization and UTF-8 Handling}
+Since user input can vary in case and format, a `normalizeText` function was implemented. This function:
+\begin{itemize}
+    \item Converts all lowercase characters, including diacritics, to their uppercase equivalents.
+    \item Removes all spaces from the text.
+\end{itemize}
+A crucial part of the implementation is handling UTF-8 characters. Characters like \say{Ă} or \say{Ș} are represented by more than one byte. Standard C++ string iteration would process these characters byte-by-byte, leading to incorrect behavior. To solve this, the `splitUTF8` function was created to parse the input string and correctly segment it into a `vector<string>`, where each element represents a single, complete character.
+
+\subsubsection{Vigenère Cipher Logic}
+The main logic is encapsulated in the `vigenere` function. It takes the message and the key (as vectors of characters), the character-to-number map, and a boolean flag to determine the operation (encrypt or decrypt).
+
+For each character in the message, it performs the following calculation:
+\begin{itemize}
+    \item \textbf{Encryption:} $C_i = (P_i + K_i) \pmod{N}$
+    \item \textbf{Decryption:} $P_i = (C_i - K_i + N) \pmod{N}$
+\end{itemize}
+Where $P_i$ is the numerical value of the plaintext character, $K_i$ is the numerical value of the corresponding key character (the key is repeated if it's shorter than the message), $C_i$ is the numerical value of the resulting ciphertext character, and $N$ is the alphabet size (31 in this case). The addition of $N$ in the decryption formula ensures the result is always non-negative before the modulo operation.
+
+\clearpage
+\begin{lstlisting}[caption={The core Vigenère function implementing encryption and decryption.}, label=list:vigenere]
+string vigenere(const vector<string> &msg, const vector<string> &key,
+                const unordered_map<string, int> &map, bool encrypt) {
+  string result;
+  for (size_t i = 0; i < msg.size(); i++) {
+    int p = map.at(msg[i]);
+    int k = map.at(key[i % key.size()]);
+    int c = encrypt ? (p + k) % ALPHABET_SIZE
+                    : (p - k + ALPHABET_SIZE) % ALPHABET_SIZE;
+    result += ALFABET[c];
+  }
+  return result;
+}
+\end{lstlisting}
+
+\clearpage
+\section{Execution Example}
+The following demonstrates the program's functionality with a sample encryption and decryption cycle.
+
+\subsection{Encryption}
+The program first prompts for the operation, key, and message.
+\begin{itemize}
+    \item \textbf{Operation:} 1 (Criptare)
+    \item \textbf{Key:} `CRIPTOGRAFIE`
+    \item \textbf{Message:} `Acesta este un mesaj secret`
+\end{itemize}
+After normalization, the plaintext becomes `ACESTAESTEUNMESAJSECRET`. The program then applies the Vigenère encryption logic.
+
+\begin{verbatim}
+Alege operatia (1 - Criptare, 2 - Decriptare): 1
+Introdu cheia (minim 7 caractere): CRIPTOGRAFIE
+Introdu mesajul: Acesta este un mesaj secret
+Criptograma: CȚNGMOLITKCȘQVAPCFLȚRKÂ
+\end{verbatim}
+
+\subsection{Decryption}
+To verify the correctness of the encryption, the resulting ciphertext is decrypted using the same key.
+\begin{itemize}
+    \item \textbf{Operation:} 2 (Decriptare)
+    \item \textbf{Key:} `CRIPTOGRAFIE`
+    \item \textbf{Message:} `CȚNGMOLITKCȘQVAPCFLȚRKÂ`
+\end{itemize}
+The program successfully recovers the original normalized plaintext.
+\begin{verbatim}
+Alege operatia (1 - Criptare, 2 - Decriptare): 2
+Introdu cheia (minim 7 caractere): CRIPTOGRAFIE
+Introdu mesajul: CȚNGMOLITKCȘQVAPCFLȚRKÂ
+Mesaj decriptat: ACESTAESTEUNMESAJSECRET
+\end{verbatim}
+
+This confirms that the implementation of both the encryption and decryption algorithms is correct.
+
+\clearpage
+\section{Conclusion}
+
+This laboratory work provided a comprehensive, hands-on experience with implementing the Vigenère cipher. The project demonstrated the complete lifecycle of a cryptographic process: from raw input to normalized plaintext, through encryption to ciphertext, and back to plaintext via decryption.
+
+The main challenges and learning points were:
+\begin{itemize}
+    \item The importance of a clearly defined alphabet and the necessity of normalizing all inputs to conform to it.
+    \item The technical requirement of handling multi-byte character encodings like UTF-8 in a language like C++, which is not natively aware of Unicode characters. This required a custom parsing solution.
+    \item The straightforward but powerful mathematical logic behind the cipher, which is based on modular arithmetic.
+\end{itemize}
+
+By successfully implementing this program, I have gained a deeper understanding of polyalphabetic substitution ciphers, the practical challenges of text processing in cryptography, and the foundational principles that govern classical encryption techniques.
+
+\appendix
+\section{Full Source Code}
+\begin{lstlisting}[caption={Complete C++ source code for Vigenère cipher implementation.}]
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+using namespace std;
+
+const vector<string> ALFABET = {/*alphabetically organized romanian letters*/}
+const int ALPHABET_SIZE = ALFABET.size();
+
+unordered_map<string, int> createCharToNum() {
+  unordered_map<string, int> m;
+  for (int i = 0; i < ALPHABET_SIZE; i++)
+    m[ALFABET[i]] = i;
+  return m;
+}
+
+string replaceAll(string text, const string &from, const string &to) {
+  size_t start = 0;
+  while ((start = text.find(from, start)) != string::npos) {
+    text.replace(start, from.length(), to);
+    start += to.length();
+  }
+  return text;
+}
+
+vector<string> splitUTF8(const string &text) {
+  vector<string> chars;
+  for (size_t i = 0; i < text.size();) {
+    unsigned char c = text[i];
+    int len = 1;
+    if ((c & 0xE0) == 0xC0)
+      len = 2;
+    else if ((c & 0xF0) == 0xE0)
+      len = 3;
+    chars.push_back(text.substr(i, len));
+    i += len;
+  }
+  return chars;
+}
+
+bool validateText(const vector<string> &chars,
+                  const unordered_map<string, int> &map) {
+  for (auto &ch : chars) {
+    if (!map.count(ch))
+      return false;
+  }
+  return true;
+}
+
+string vigenere(const vector<string> &msg, const vector<string> &key,
+                const unordered_map<string, int> &map, bool encrypt) {
+  string result;
+  for (size_t i = 0; i < msg.size(); i++) {
+    int p = map.at(msg[i]);
+    int k = map.at(key[i % key.size()]);
+    int c = encrypt ? (p + k) % ALPHABET_SIZE
+                    : (p - k + ALPHABET_SIZE) % ALPHABET_SIZE;
+    result += ALFABET[c];
+  }
+  return result;
+}
+
+int main() {
+  auto map = createCharToNum();
+
+  cout << "Alege operatia (1 - Criptare, 2 - Decriptare): ";
+  int opt;
+  cin >> opt;
+  cin.ignore();
+
+  cout << "Introdu cheia (minim 7 caractere): ";
+  string key;
+  getline(cin, key);
+  key = normalizeText(key);
+  auto keyChars = splitUTF8(key);
+
+  if (keyChars.size() < 7) {
+    cerr << "Eroare: cheia trebuie sa aiba cel putin 7 caractere.\n";
+    return 1;
+  }
+  if (!validateText(keyChars, map)) {
+    cerr << "Eroare: cheia contine caractere invalide.\n";
+    return 1;
+  }
+
+  cout << "Introdu mesajul: ";
+  string msg;
+  getline(cin, msg);
+  msg = normalizeText(msg);
+  auto msgChars = splitUTF8(msg);
+  if (!validateText(msgChars, map)) {
+    cerr << "Eroare: mesajul contine caractere invalide.\n";
+    return 1;
+  }
+
+  bool encrypt = (opt == 1);
+  string result = vigenere(msgChars, keyChars, map, encrypt);
+
+  if (encrypt)
+    cout << "Criptograma: " << result << "\n";
+  else
+    cout << "Mesaj decriptat: " << result << "\n";
+
+  return 0;
+}
+\end{lstlisting}
+
+\end{document}
