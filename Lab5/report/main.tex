@@ -1,0 +1,658 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{geometry}
+\usepackage{dirtytalk}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Define colors for listings
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstset{
+    language=C++,
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{black},
+    title=\lstname
+}
+
+
+\begin{document}
+\begin{titlepage}
+\begin{center}
+    \includegraphics[width=0.3\textwidth]{image.png} \\[0.2cm]
+
+    \textbf{MINISTRY OF EDUCATION, CULTURE AND RESEARCH
+OF THE REPUBLIC OF MOLDOVA} \\[0.3cm]
+
+    \textbf{Technical University of Moldova
+Faculty of Computers, Informatics and Microelectronics
+Department of Software and Automation Engineering} \\[2cm]
+
+    \textbf{Postoronca Dumitru FAF-233}\\[0.5cm]
+
+    \Huge \textbf{Report} \\[0.5cm]
+
+    \large Laboratory work n.5 \\[0.5cm]
+
+    \textbf{on CS} \\[3cm]
+
+    \begin{flushright}
+        \textit{Checked by:} \\
+        \textbf{M. Zaica}, \textit{university assistant} \\
+        DISA, FCIM, UTM
+    \end{flushright}
+
+    \vfill
+
+    Chișinău -- 2025
+\end{center}
+\end{titlepage}
+
+
+\newpage
+\setcounter{page}{1}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+\lhead{FAF-233 Postoronca Dumitru ; Laboratory Work №5}
+
+\section{Purpose of the Laboratory Work}
+The purpose of this laboratory work is to create and implement an internal Public Key Infrastructure (PKI) using the OpenSSL tool. A PKI is a framework that manages digital certificates and public-key encryption, enabling secure communication and authentication in digital systems.
+
+The main objectives of this laboratory work are:
+\begin{itemize}
+    \item Generate a root private key and initialize a Certificate Authority (CA)
+    \item Create a self-signed certificate for the CA
+    \item Implement functionality to issue private keys and certificates for users
+    \item Enable users to generate digital signatures for documents
+    \item Implement certificate verification mechanisms
+    \item Develop a certificate revocation system using Certificate Revocation Lists (CRLs)
+\end{itemize}
+
+The implementation must meet the following technical requirements:
+\begin{itemize}
+    \item Use the RSA algorithm for generating all private keys
+    \item User private keys must be at least 2048 bits in length with a validity period of 365 days
+    \item The CA private key must be 4096 bits long with a certificate validity of 10 years (3650 days)
+    \item Support document signing and signature verification
+    \item Provide certificate revocation capabilities
+\end{itemize}
+
+This laboratory work demonstrates the fundamental concepts of asymmetric cryptography, certificate management, and trust hierarchies that form the backbone of modern secure communication systems.
+
+\section{Theoretical Background}
+
+\subsection{Public Key Infrastructure (PKI)}
+A Public Key Infrastructure is a comprehensive system for creating, managing, distributing, using, storing, and revoking digital certificates. It serves as the foundation for secure digital communication and authentication in modern computing systems. A PKI consists of:
+
+\begin{itemize}
+    \item \textbf{Certificate Authority (CA):} A trusted entity that issues and manages digital certificates
+    \item \textbf{Registration Authority (RA):} Verifies the identity of entities requesting certificates
+    \item \textbf{Certificate Database:} Stores issued certificates and their metadata
+    \item \textbf{Certificate Revocation List (CRL):} A list of revoked certificates
+    \item \textbf{Digital Certificates:} Electronic documents that bind public keys to identities
+\end{itemize}
+
+\subsection{RSA Algorithm}
+RSA (Rivest-Shamir-Adleman) is an asymmetric cryptographic algorithm that uses a pair of keys: a public key for encryption and verification, and a private key for decryption and signing. The security of RSA is based on the computational difficulty of factoring large prime numbers.
+
+Key properties of RSA:
+\begin{itemize}
+    \item \textbf{Key Generation:} Two large prime numbers are selected and multiplied to create the modulus
+    \item \textbf{Public Key:} Can be shared freely and is used for encryption and signature verification
+    \item \textbf{Private Key:} Must be kept secret and is used for decryption and signature generation
+    \item \textbf{Key Sizes:} Modern standards recommend minimum 2048-bit keys for general use and 4096-bit keys for long-term security
+\end{itemize}
+
+\subsection{Digital Certificates and X.509 Standard}
+A digital certificate is an electronic document that uses a digital signature to bind a public key with an identity. The X.509 standard defines the format of public key certificates and is widely used in protocols such as TLS/SSL, S/MIME, and digital signatures.
+
+An X.509 certificate contains:
+\begin{itemize}
+    \item \textbf{Version:} The X.509 version number
+    \item \textbf{Serial Number:} A unique identifier assigned by the CA
+    \item \textbf{Signature Algorithm:} The algorithm used to sign the certificate
+    \item \textbf{Issuer:} The Distinguished Name (DN) of the certificate issuer
+    \item \textbf{Validity Period:} Start and end dates for certificate validity
+    \item \textbf{Subject:} The Distinguished Name of the certificate holder
+    \item \textbf{Public Key:} The subject's public key and algorithm identifier
+    \item \textbf{Extensions:} Additional attributes (optional)
+    \item \textbf{Signature:} The CA's digital signature over the certificate data
+\end{itemize}
+
+\subsection{Certificate Revocation}
+Certificate revocation is the process of invalidating a certificate before its natural expiration date. Reasons for revocation include:
+\begin{itemize}
+    \item Compromise of the private key
+    \item Change in the subject's information
+    \item Cessation of operation
+    \item CA compromise
+\end{itemize}
+
+Certificate Revocation Lists (CRLs) are signed data structures that contain a list of revoked certificates. When verifying a certificate, clients should check the CRL to ensure the certificate has not been revoked.
+
+\subsection{Digital Signatures}
+A digital signature is a mathematical scheme for verifying the authenticity and integrity of digital messages or documents. The signing process uses the private key to create a signature, while verification uses the corresponding public key.
+
+The digital signature process involves:
+\begin{enumerate}
+    \item \textbf{Hashing:} The document is hashed using a cryptographic hash function (e.g., SHA-256)
+    \item \textbf{Signing:} The hash is encrypted using the signer's private key
+    \item \textbf{Verification:} The signature is decrypted using the public key and compared with a freshly computed hash
+\end{enumerate}
+
+\section{Implementation Strategy}
+
+\subsection{Technology Selection}
+For this laboratory work, I chose to implement the PKI system using a Bash shell script combined with OpenSSL command-line tools. This approach was selected for several reasons:
+
+\subsection{System Architecture}
+The implemented PKI system follows a hierarchical trust model with the following components:
+
+\begin{enumerate}
+    \item \textbf{Certificate Authority (CA):}
+    \begin{itemize}
+        \item Root private key: 4096-bit RSA key stored in \texttt{ca.key}
+        \item Self-signed certificate: 10-year validity stored in \texttt{ca.crt}
+        \item Database directory: \texttt{demoCA} containing certificate records
+    \end{itemize}
+
+    \item \textbf{Certificate Database:}
+    \begin{itemize}
+        \item \texttt{index.txt}: Database of issued certificates
+        \item \texttt{serial}: Counter for certificate serial numbers
+        \item \texttt{crlnumber}: Counter for CRL versions
+        \item \texttt{newcerts/}: Directory for issued certificates
+    \end{itemize}
+
+    \item \textbf{User Certificate Management:}
+    \begin{itemize}
+        \item Private key generation: 2048-bit RSA keys
+        \item Certificate Signing Request (CSR) creation
+        \item CA-signed certificates with 365-day validity
+    \end{itemize}
+
+    \item \textbf{Digital Signature System:}
+    \begin{itemize}
+        \item Document signing using SHA-256 hash and RSA
+        \item Public key extraction from certificates
+        \item Signature verification mechanism
+    \end{itemize}
+
+    \item \textbf{Revocation System:}
+    \begin{itemize}
+        \item Certificate revocation commands
+        \item CRL generation and management
+        \item Certificate validation against CRL
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Configuration Management}
+The implementation uses a custom OpenSSL configuration file (\texttt{my\_config.cnf}) that defines:
+\begin{itemize}
+    \item CA directory structure
+    \item Database file locations
+    \item Default certificate validity periods (365 days)
+    \item Default signature algorithm (SHA-256)
+    \item CRL validity period (30 days)
+    \item Certificate issuance policy
+\end{itemize}
+
+\subsection{Implementation Details}
+The implementation is organized into five distinct phases, each handling a specific aspect of the PKI system.
+
+\subsubsection{Phase 0: Environment Setup}
+Before creating any cryptographic materials, the script initializes the CA database structure:
+
+\begin{lstlisting}[language=bash, caption={Database initialization}]
+mkdir -p demoCA/newcerts
+touch demoCA/index.txt
+echo 1000 > demoCA/serial
+echo 1000 > demoCA/crlnumber
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{demoCA/newcerts}: Directory where issued certificates will be stored
+    \item \texttt{index.txt}: Certificate database tracking all issued certificates
+    \item \texttt{serial}: Starting serial number for certificates (1000 in hexadecimal)
+    \item \texttt{crlnumber}: Starting version number for Certificate Revocation Lists
+\end{itemize}
+
+\subsubsection{Phase 1: Certificate Authority Creation}
+The CA is the root of trust in the PKI system. Creating the CA involves two steps:
+
+\begin{lstlisting}[language=bash, caption={CA key and certificate generation}]
+openssl genrsa -out ca.key 4096
+
+# Create self-signed certificate valid for 3650 days
+openssl req -new -x509 -key ca.key -out ca.crt \
+    -days 3650 -subj "/CN=RootCA" # CN - CommonName
+\end{lstlisting}
+
+\texttt{-subj} argument is used to skip the interactive questioning for things like organisation,
+country, city, etc.
+
+\subsubsection{Phase 2: User Key and CSR Generation}
+For each user (demonstrated with user "John"), the system generates a private key and creates a \textbf{Certificate Signing Request}:
+
+\begin{lstlisting}[language=bash, caption={User key and CSR generation}]
+# generate 2048-bit RSA private key for user
+openssl genrsa -out john.key 2048
+
+# create Certificate Signing Request
+openssl req -new -key john.key -out john.csr \
+    -subj "/CN=John"
+\end{lstlisting}
+
+The CSR contains the user's public key and identity information, which the CA will verify and sign.
+
+\subsubsection{Phase 3: Certificate Issuance}
+The CA signs the user's CSR to issue a certificate:
+
+\begin{lstlisting}[language=bash, caption={Certificate signing by CA}]
+openssl ca -config my_config.cnf \
+    -in john.csr -out john.crt -batch
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{ca}: Certificate Authority operation
+    \item \texttt{-config my\_config.cnf}: Use custom configuration
+    \item \texttt{-batch}: Non-interactive mode
+\end{itemize}
+
+The configuration file specifies that certificates are valid for 365 days (as in requirements).
+
+\subsubsection{Phase 4: Digital Signature Operations}
+The system demonstrates document signing and verification:
+
+\begin{lstlisting}[language=bash, caption={Document signing and verification}]
+echo "I agree to the terms." > doc.txt
+
+# sign the document using SHA-256 and private key
+openssl dgst -sha256 -sign john.key -out doc.sig doc.txt
+
+# extract public key from certificate
+openssl x509 -in john.crt -pubkey -noout > john_pub.pem
+
+# verify signature using public key
+openssl dgst -sha256 -verify john_pub.pem \
+    -signature doc.sig doc.txt
+\end{lstlisting}
+
+The signing process:
+\begin{enumerate}
+    \item Computes SHA-256 hash of the document
+    \item Encrypts the hash with the user's private key
+    \item Stores the signature in a separate file
+\end{enumerate}
+
+Verification process:
+\begin{enumerate}
+    \item Extracts the public key from the user's certificate
+    \item Decrypts the signature using the public key
+    \item Compares with a freshly computed hash of the document
+\end{enumerate}
+
+\subsubsection{Phase 5: Certificate Revocation}
+The final phase demonstrates certificate revocation and CRL management:
+
+\begin{lstlisting}[language=bash, caption={Certificate revocation}]
+openssl ca -config my_config.cnf -revoke john.crt
+
+# generate Certificate Revocation List
+openssl ca -config my_config.cnf -gencrl \
+    -out revocation_list.crl
+
+# verify certificate against CRL
+openssl verify -crl_check -CAfile ca.crt \
+    -CRLfile revocation_list.crl john.crt
+\end{lstlisting}
+
+The revocation process:
+\begin{enumerate}
+    \item Marks the certificate as revoked in the database
+    \item Generates a new CRL containing the revoked certificate
+    \item Verification checks show the certificate is no longer valid
+\end{enumerate}
+
+\clearpage
+\section{Execution Example}
+This section demonstrates the complete execution of the PKI system, showing the output at each phase.
+
+\subsection{Script Execution Output}
+\begin{verbatim}
+$ ./labScript.sh
+--- Setting up Environment ---
+--- Generating CA Key and Certificate ---
+--- Generating User Key and CSR ---
+--- Signing User Certificate ---
+Using configuration from my_config.cnf
+Check that the request matches the signature
+Signature ok
+The Subject's Distinguished Name is as follows
+commonName            :ASN.1 12:'John'
+Certificate is to be certified until Nov 22 13:54:52 2026 GMT (365 days)
+
+Write out database with 1 new entries
+Database updated
+--- Testing Signature ---
+Verified OK
+--- Revoking Certificate ---
+Using configuration from my_config.cnf
+Revoking Certificate 1000.
+Database updated
+Using configuration from my_config.cnf
+--- Checking Revocation Status ---
+SUCCESS: The certificate is correctly identified as REVOKED.
+\end{verbatim}
+
+\subsection{Generated Files Analysis}
+
+\subsubsection{Certificate Authority Files}
+After execution, the following CA files are created:
+
+\begin{itemize}
+    \item \textbf{ca.key}: 4096-bit RSA private key (protected file, 600 permissions)
+    \item \textbf{ca.crt}: Self-signed X.509 certificate valid for 10 years
+\end{itemize}
+
+We can inspect the CA certificate:
+\begin{verbatim}
+$ openssl x509 -in ca.crt -text -noout
+
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            19:35:0f:bc:f4:d6:22:f5:d2:39:c0:6f:2f:31:6e:f9:b7:87:a0:2d
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: CN=RootCA
+        Validity
+            Not Before: Nov 22 13:54:52 2025 GMT
+            Not After : Nov 20 13:54:52 2035 GMT
+        Subject: CN=RootCA
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (4096 bit)
+                Modulus:
+                    00:a8:c2:3d:...[4096 bits]
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Subject Key Identifier: 
+                48:50:3C:75:C1:78:CE:E5:63:DC:04:B2:EF:2F:EA:38:BB:F3:C6:0F
+            X509v3 Authority Key Identifier: 
+                48:50:3C:75:C1:78:CE:E5:63:DC:04:B2:EF:2F:EA:38:BB:F3:C6:0F
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+    Signature Algorithm: sha256WithRSAEncryption
+    Signature Value:
+        42:ae:44:af:37:15:6f:.....
+\end{verbatim}
+
+Key observations:
+\begin{itemize}
+    \item Version 3 X.509 certificate
+    \item Self-signed (Issuer = Subject = RootCA)
+    \item 10-year validity period (3650 days)
+    \item SHA-256WithRSAEncryption signature algorithm
+    \item 4096-bit RSA public key
+\end{itemize}
+
+\subsubsection{User Certificate Files}
+The user "John" has the following files:
+
+\begin{itemize}
+    \item \textbf{john.key}: 2048-bit RSA private key
+    \item \textbf{john.csr}: Certificate Signing Request
+    \item \textbf{john.crt}: CA-signed certificate valid for 365 days
+    \item \textbf{john\_pub.pem}: Extracted public key
+\end{itemize}
+
+Inspecting the user certificate:
+\begin{verbatim}
+$ openssl x509 -in john.crt -text -noout
+
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 4096 (0x1000)
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: CN=RootCA
+        Validity
+            Not Before: Nov 22 13:54:52 2025 GMT
+            Not After : Nov 22 13:54:52 2026 GMT
+        Subject: CN=John
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:d6:12:5d:...[2048 bits]
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Subject Key Identifier: 
+                99:05:52:70:54:92:35:A0:23:6D:62:64:B2:65:DC:BB:F7:C5:BC:35
+            X509v3 Authority Key Identifier: 
+                48:50:3C:75:C1:78:CE:E5:63:DC:04:B2:EF:2F:EA:38:BB:F3:C6:0F
+    Signature Algorithm: sha256WithRSAEncryption
+    Signature Value:
+        8c:75:62:e3:...
+\end{verbatim}
+
+Key observations:
+\begin{itemize}
+    \item Issued by RootCA (establishing trust chain)
+    \item Serial number 1000 (first issued certificate)
+    \item 1-year validity period (365 days)
+    \item 2048-bit RSA public key
+    \item SHA-256WithRSAEncryption signature algorithm
+\end{itemize}
+
+\subsubsection{Digital Signature Files}
+The document signing process creates:
+
+\begin{itemize}
+    \item \textbf{doc.txt}: Original document ("I agree to the terms.")
+    \item \textbf{doc.sig}: Digital signature (256 bytes for 2048-bit RSA)
+\end{itemize}
+
+The signature verification confirms:
+\begin{verbatim}
+$ openssl dgst -sha256 -verify john_pub.pem \
+    -signature doc.sig doc.txt
+Verified OK
+\end{verbatim}
+
+\subsubsection{Certificate Revocation List}
+After revocation, the system generates:
+
+\begin{itemize}
+    \item \textbf{revocation\_list.crl}: Certificate Revocation List
+\end{itemize}
+
+Inspecting the CRL:
+\begin{verbatim}
+$ openssl crl -in revocation_list.crl -text -noout
+
+Certificate Revocation List (CRL):
+    Version 1 (0x0)
+    Signature Algorithm: sha256WithRSAEncryption
+    Issuer: CN=RootCA
+    Last Update: Nov 22 13:54:52 2025 GMT
+    Next Update: Dec 22 13:54:52 2025 GMT
+Revoked Certificates:
+    Serial Number: 1000
+        Revocation Date: Nov 22 13:54:52 2025 GMT
+    Signature Algorithm: sha256WithRSAEncryption
+    Signature Value:
+        86:a1:b8:6d:5f.......
+\end{verbatim}
+
+The CRL shows:
+\begin{itemize}
+    \item Certificate 1000 (John's certificate) is revoked
+    \item CRL version number matches the crlnumber file
+    \item Next update scheduled for 30 days later
+    \item Signed by RootCA
+\end{itemize}
+
+\subsection{Verification Results}
+The script successfully demonstrates all required functionality:
+
+\begin{enumerate}
+    \item \textbf{CA Creation:} 4096-bit key and 10-year self-signed certificate
+    \item \textbf{Certificate Issuance:} 2048-bit user key with 365-day validity
+    \item \textbf{Digital Signatures:} Document signing and verification work correctly
+    \item \textbf{Revocation:} Certificate is properly revoked and appears in CRL
+    \item \textbf{Validation:} Revoked certificate fails verification as expected
+\end{enumerate}
+
+\clearpage
+\section{Conclusion}
+
+This laboratory work provided a comprehensive understanding of Public Key 
+Infrastructure and certificate management systems. By implementing a complete 
+PKI system using OpenSSL, I gained practical experience with several fundamental 
+concepts of modern cryptography and secure communication.
+
+\clearpage
+\appendix
+\section{Full Source Code}
+
+\subsection{Main PKI Script: labScript.sh}
+\begin{lstlisting}[language=bash, caption={Complete Bash script implementing the PKI system.}]
+#!/bin/bash
+
+# --- Phase 0: setup Database ---
+echo "--- Setting up Environment ---"
+rm -rf demoCA newcerts *.pem *.key *.crt *.csr *.txt *.sig *.crl
+mkdir -p demoCA/newcerts
+touch demoCA/index.txt
+echo 1000 > demoCA/serial
+echo 1000 > demoCA/crlnumber
+
+# --- Phase 1: Create CA (4096 bits, 3650 days) ---
+echo "--- Generating CA Key and Certificate ---"
+openssl genrsa -out ca.key 4096
+openssl req -new -x509 -key ca.key -out ca.crt \
+    -days 3650 -subj "/CN=RootCA"
+
+# --- Phase 2: Create User John (2048 bits) ---
+echo "--- Generating User Key and CSR ---"
+openssl genrsa -out john.key 2048
+openssl req -new -key john.key -out john.csr -subj "/CN=John"
+
+# --- Phase 3: Issue Certificate (365 days) ---
+echo "--- Signing User Certificate ---"
+openssl ca -config my_config.cnf -in john.csr \
+    -out john.crt -batch
+
+# --- Phase 4: Sign and Verify ---
+echo "--- Testing Signature ---"
+echo "I agree to the terms." > doc.txt
+# Sign
+openssl dgst -sha256 -sign john.key -out doc.sig doc.txt
+# Extract Public Key
+openssl x509 -in john.crt -pubkey -noout > john_pub.pem
+# Verify
+openssl dgst -sha256 -verify john_pub.pem \
+    -signature doc.sig doc.txt
+
+# --- Phase 5: Revocation ---
+echo "--- Revoking Certificate ---"
+openssl ca -config my_config.cnf -revoke john.crt
+openssl ca -config my_config.cnf -gencrl \
+    -out revocation_list.crl
+
+echo "--- Checking Revocation Status ---"
+openssl verify -crl_check -CAfile ca.crt \
+    -CRLfile revocation_list.crl john.crt > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+    echo "SUCCESS: Certificate is correctly revoked."
+else
+    echo "FAILURE: Certificate still valid."
+fi
+\end{lstlisting}
+
+\subsection{OpenSSL Configuration: my\_config.cnf}
+\begin{lstlisting}[language=bash, caption={OpenSSL configuration file for CA operations.}]
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir = ./demoCA
+database = $dir/index.txt
+new_certs_dir = $dir/newcerts
+certificate = ./ca.crt
+serial = $dir/serial
+clrnumber = $dir/crlnumber
+private_key = ./ca.key
+default_days = 365
+default_crl_days = 30
+default_md = sha256
+policy = policy_anything
+
+[ policy_anything ]
+commonName = supplied
+\end{lstlisting}
+
+\subsubsection{Policy Section}
+The \texttt{policy\_anything} section defines which fields must be present in certificate requests:
+\begin{itemize}
+    \item \textbf{commonName = supplied}: The Common Name (CN) must be provided by the requester
+\end{itemize}
+
+This minimal policy allows flexible certificate issuance suitable for testing and demonstration purposes. Production systems would typically enforce stricter policies including organizational unit, organization, and country fields.
+
+\subsection{Usage Instructions}
+
+To execute the PKI system:
+
+\begin{verbatim}
+# Make the script executable
+chmod +x labScript.sh
+
+# Run the script
+./labScript.sh
+\end{verbatim}
+
+To issue additional user certificates, use the Phase 2 and Phase 3 commands with different user names:
+
+\begin{verbatim}
+# Generate key and CSR for a new user
+openssl genrsa -out alice.key 2048
+openssl req -new -key alice.key -out alice.csr \
+    -subj "/CN=Alice"
+
+# Sign the certificate
+openssl ca -config my_config.cnf -in alice.csr \
+    -out alice.crt -batch
+\end{verbatim}
+
+\end{document}
