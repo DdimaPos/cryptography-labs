@@ -1,0 +1,19 @@
+# Ignore all keys and certificates
+*.key
+*.crt
+*.csr
+*.pem
+*.srl
+*.crl
+*.sig
+
+# Ignore the database folders and files
+demoCA/
+newcerts/
+index.txt*
+serial*
+crlnumber*
+
+# Ignore the text file inputs/outputs
+doc.txt
+contract.txt

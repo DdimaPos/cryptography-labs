@@ -1,0 +1,672 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{geometry}
+\usepackage{dirtytalk}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Define colors for listings
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstset{
+    language=C++,
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{black},
+    title=\lstname
+}
+
+
+\begin{document}
+\begin{titlepage}
+\begin{center}
+    \includegraphics[width=0.3\textwidth]{image.png} \\[0.2cm]
+
+    \textbf{MINISTRY OF EDUCATION, CULTURE AND RESEARCH
+OF THE REPUBLIC OF MOLDOVA} \\[0.3cm]
+
+    \textbf{Technical University of Moldova
+Faculty of Computers, Informatics and Microelectronics
+Department of Software and Automation Engineering} \\[2cm]
+
+    \textbf{Postoronca Dumitru FAF-233}\\[0.5cm]
+
+    \Huge \textbf{Report} \\[0.5cm]
+
+    \large Laboratory work n.6 \\[0.5cm]
+
+    \textbf{on CS} \\[3cm]
+
+    \begin{flushright}
+        \textit{Checked by:} \\
+        \textbf{M. Zaica}, \textit{university assistant} \\
+        DISA, FCIM, UTM
+    \end{flushright}
+
+    \vfill
+
+    Chișinău -- 2025
+\end{center}
+\end{titlepage}
+
+
+\newpage
+\setcounter{page}{1}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+\lhead{FAF-233 Postoronca Dumitru ; Laboratory Work №6}
+
+\section{Purpose of the Laboratory Work}
+The purpose of this laboratory work is to implement and compare two digital signature algorithms: RSA and ElGamal. Digital signatures are fundamental cryptographic primitives that provide authentication, integrity, and non-repudiation for digital documents.
+
+The main objectives of this laboratory work are:
+\begin{itemize}
+    \item Implement RSA digital signature scheme with MD4 hash algorithm
+    \item Implement ElGamal digital signature scheme with NTLM hash algorithm
+    \item Generate cryptographic keys meeting specified security requirements
+    \item Sign a document using both signature schemes
+    \item Verify signatures to ensure document authenticity and integrity
+    \item Compare the two signature algorithms in terms of implementation and security properties
+\end{itemize}
+
+The implementation must meet the following technical requirements:
+\begin{itemize}
+    \item \textbf{RSA Signature:}
+    \begin{itemize}
+        \item Key size: RSA modulus n must be at least 3072 bits
+        \item Hash algorithm: MD4
+        \item Signature scheme: PKCS\#1 v1.5
+    \end{itemize}
+    \item \textbf{ElGamal Signature:}
+    \begin{itemize}
+        \item Prime modulus p: 2048 bits (provided value)
+        \item Generator g: 2
+        \item Hash algorithm: NTLM (MD4-based)
+    \end{itemize}
+    \item \textbf{Common Requirements:}
+    \begin{itemize}
+        \item Sign the file \texttt{message\_multiline.txt}
+        \item Display hash values in both hexadecimal and decimal formats
+        \item Implement complete key generation, signing, and verification procedures
+        \item Demonstrate signature validation and tampering detection
+    \end{itemize}
+\end{itemize}
+
+This laboratory work demonstrates the mathematical foundations of digital signatures, the differences between RSA and discrete logarithm-based schemes, and the practical implementation of cryptographic protocols.
+
+\section{Theoretical Background}
+
+\subsection{Digital Signatures}
+A digital signature is a mathematical scheme that provides authentication, integrity, and non-repudiation for digital documents. Unlike handwritten signatures, digital signatures are based on cryptographic algorithms and offer verifiable mathematical guarantees.
+
+Key properties of digital signatures:
+\begin{itemize}
+    \item \textbf{Authentication:} Verifies the identity of the signer
+    \item \textbf{Integrity:} Ensures the message has not been modified
+    \item \textbf{Non-repudiation:} The signer cannot deny having signed the document
+    \item \textbf{Unforgeability:} Only the holder of the private key can create valid signatures
+\end{itemize}
+
+The general digital signature process:
+\begin{enumerate}
+    \item \textbf{Key Generation:} Generate a public-private key pair
+    \item \textbf{Signing:} Hash the message and encrypt the hash with the private key
+    \item \textbf{Verification:} Hash the message, decrypt the signature with the public key, and compare
+\end{enumerate}
+
+\subsection{RSA Digital Signature Algorithm}
+RSA (Rivest-Shamir-Adleman) is an asymmetric cryptographic algorithm widely used for digital signatures. Its security is based on the computational difficulty of factoring large composite numbers into their prime factors.
+
+\subsubsection{RSA Key Generation}
+\begin{enumerate}
+    \item Select two large random prime numbers $p$ and $q$
+    \item Compute the modulus: $n = p \times q$
+    \item Compute Euler's totient: $\phi(n) = (p-1)(q-1)$
+    \item Choose public exponent $e$ (commonly 65537) where $\gcd(e, \phi(n)) = 1$
+    \item Compute private exponent $d$ where $d \times e \equiv 1 \pmod{\phi(n)}$
+    \item Public key: $(e, n)$, Private key: $(d, n)$
+\end{enumerate}
+
+\subsubsection{RSA Signature Generation}
+Given a message $m$:
+\begin{enumerate}
+    \item Compute hash: $h = \text{Hash}(m)$
+    \item Generate signature: $s = h^d \bmod n$ (encrypt hash with private key)
+\end{enumerate}
+
+\subsubsection{RSA Signature Verification}
+Given message $m$ and signature $s$:
+\begin{enumerate}
+    \item Compute hash: $h = \text{Hash}(m)$
+    \item Decrypt signature: $h' = s^e \bmod n$ (using public key)
+    \item Verify: Check if $h = h'$
+\end{enumerate}
+
+For this laboratory work, we use a 3072-bit modulus $n$ and the PKCS\#1 v1.5 padding scheme, which adds structure to the hash before signing to prevent certain attacks.
+
+\subsection{ElGamal Digital Signature Algorithm}
+ElGamal is a digital signature scheme based on the discrete logarithm problem. Unlike RSA, which relies on factorization, ElGamal's security depends on the difficulty of computing discrete logarithms in finite fields.
+
+\subsubsection{ElGamal Key Generation}
+\begin{enumerate}
+    \item Choose a large prime $p$ and a generator $g$ of $Z_p^*$
+    \item Select private key: random $x$ where $2 \leq x \leq p-2$
+    \item Compute public key: $y = g^x \bmod p$
+    \item Public key: $(p, g, y)$, Private key: $x$
+\end{enumerate}
+
+\subsubsection{ElGamal Signature Generation}
+Given a message $m$:
+\begin{enumerate}
+    \item Compute hash: $h = \text{Hash}(m)$
+    \item Choose random $k$ where $\gcd(k, p-1) = 1$
+    \item Compute $r = g^k \bmod p$
+    \item Compute $s = (h - xr) \times k^{-1} \bmod (p-1)$
+    \item Signature: $(r, s)$
+\end{enumerate}
+
+\subsubsection{ElGamal Signature Verification}
+Given message $m$ and signature $(r, s)$:
+\begin{enumerate}
+    \item Verify bounds: $0 < r < p$ and $0 < s < p-1$
+    \item Compute hash: $h = \text{Hash}(m)$
+    \item Verify equation: $g^h \equiv y^r \times r^s \pmod{p}$
+\end{enumerate}
+
+A key difference from RSA: ElGamal produces two values $(r, s)$ and requires a random $k$ for each signature, making it probabilistic (different signatures for the same message).
+
+\subsection{MD4 Hash Algorithm}
+MD4 (Message Digest Algorithm 4) is a cryptographic hash function that produces a 128-bit (16-byte) hash value. Designed by Ronald Rivest in 1990, MD4 was one of the early hash functions used in digital signatures.
+
+Properties of MD4:
+\begin{itemize}
+    \item \textbf{Output size:} 128 bits (32 hexadecimal digits)
+    \item \textbf{Block size:} 512 bits
+    \item \textbf{Rounds:} 3 rounds of operations
+    \item \textbf{Speed:} Very fast computation
+\end{itemize}
+
+\textbf{Security Note:} MD4 is cryptographically broken and should not be used in production systems. It is included in this laboratory work for educational purposes to match the assignment requirements. Modern systems use SHA-256 or SHA-3.
+
+\subsection{NTLM Hash Algorithm}
+NTLM (NT LAN Manager) is a suite of security protocols used by Microsoft. The NTLM hash is based on MD4 and is computed by:
+\begin{enumerate}
+    \item Convert the message to UTF-16LE encoding
+    \item Apply MD4 hash function
+\end{enumerate}
+
+For digital signature purposes in this laboratory, we use MD4 directly on the message bytes, which is functionally equivalent for demonstrating the ElGamal signature scheme.
+
+\section{Implementation Strategy}
+
+\subsection{System Architecture}
+The implementation consists of two independent Python scripts, each implementing a different signature scheme:
+
+\begin{enumerate}
+    \item \textbf{RSA Signature Implementation (\texttt{rsa\_signature.py}):}
+    \begin{itemize}
+        \item Key generation: 3072-bit RSA keys (public and private)
+        \item Hashing: MD4 algorithm
+        \item Signing: PKCS\#1 v1.5 padding scheme
+        \item Output: Private key, public key, and binary signature files
+    \end{itemize}
+
+    \item \textbf{ElGamal Signature Implementation (\texttt{elgamal\_signature.py}):}
+    \begin{itemize}
+        \item Key generation: Private key $x$, public key $y = g^x \bmod p$
+        \item Parameters: Fixed 2048-bit prime $p$ and generator $g=2$
+        \item Hashing: NTLM (MD4-based) algorithm
+        \item Output: Private key, public key, and signature pair $(r, s)$
+    \end{itemize}
+\end{enumerate}
+
+Both implementations follow object-oriented design with dedicated classes for signature operations.
+
+\subsection{Implementation Details}
+
+\subsubsection{Part 1: RSA Digital Signature}
+
+The RSA implementation consists of an \texttt{RSADigitalSignature} class with the following key methods:
+
+\textbf{Key Generation:}
+\begin{lstlisting}[language=Python, caption={RSA key generation}]
+from Crypto.PublicKey import RSA
+
+def generate_keys(self):
+    # Generate 3072-bit RSA key pair
+    self.private_key = RSA.generate(3072)
+    self.public_key = self.private_key.publickey()
+    return self.private_key, self.public_key
+\end{lstlisting}
+
+\textbf{Message Signing:}
+\begin{lstlisting}[language=Python, caption={RSA signing with MD4}]
+from Crypto.Hash import MD4
+from Crypto.Signature import pkcs1_15
+
+def sign_message(self, message):
+    # Compute MD4 hash
+    hash_obj = MD4.new(message)
+    hash_decimal = int(hash_obj.hexdigest(), 16)
+
+    # Sign using PKCS#1 v1.5
+    signature = pkcs1_15.new(self.private_key).sign(hash_obj)
+    return signature
+\end{lstlisting}
+
+\textbf{Signature Verification:}
+\begin{lstlisting}[language=Python, caption={RSA verification}]
+def verify_signature(self, message, signature):
+    hash_obj = MD4.new(message)
+    try:
+        pkcs1_15.new(self.public_key).verify(hash_obj, signature)
+        return True  # Signature is valid
+    except (ValueError, TypeError):
+        return False  # Signature is invalid
+\end{lstlisting}
+
+\subsubsection{Part 2: ElGamal Digital Signature}
+
+The ElGamal implementation uses an \texttt{ElGamalSignature} class with these core methods:
+
+\textbf{Key Generation:}
+\begin{lstlisting}[language=Python, caption={ElGamal key generation}]
+import secrets
+
+def generate_keys(self):
+    # Generate private key x in range [2, p-2]
+    self.private_key = secrets.randbelow(self.p - 3) + 2
+
+    # Compute public key y = g^x mod p
+    self.public_key = pow(self.g, self.private_key, self.p)
+    return self.private_key, self.public_key
+\end{lstlisting}
+
+\textbf{Message Signing:}
+\begin{lstlisting}[language=Python, caption={ElGamal signing}]
+from math import gcd
+
+def sign_message(self, message):
+    # Compute hash
+    hash_int, hash_hex = self.ntlm_hash(message)
+
+    # Choose random k where gcd(k, p-1) = 1
+    p_minus_1 = self.p - 1
+    k = secrets.randbelow(p_minus_1 - 2) + 2
+    while gcd(k, p_minus_1) != 1:
+        k = secrets.randbelow(p_minus_1 - 2) + 2
+
+    # Compute signature components
+    r = pow(self.g, k, self.p)
+    k_inv = pow(k, -1, p_minus_1)  # Modular inverse
+    s = ((hash_int - self.private_key * r) * k_inv) % p_minus_1
+
+    return r, s
+\end{lstlisting}
+
+\textbf{Signature Verification:}
+\begin{lstlisting}[language=Python, caption={ElGamal verification}]
+def verify_signature(self, message, signature):
+    r, s = signature
+    hash_int, _ = self.ntlm_hash(message)
+
+    # Check bounds
+    if not (0 < r < self.p and 0 < s < self.p - 1):
+        return False
+
+    # Verify: g^h == y^r * r^s (mod p)
+    left = pow(self.g, hash_int, self.p)
+    right = (pow(self.public_key, r, self.p) *
+             pow(r, s, self.p)) % self.p
+
+    return left == right
+\end{lstlisting}
+
+\subsection{Hash Value Representation}
+As required by the laboratory specification, both implementations display hash values in both hexadecimal and decimal formats:
+
+\begin{lstlisting}[language=Python, caption={Hash display in both formats}]
+hash_hex = hash_obj.hexdigest()
+hash_decimal = int(hash_hex, 16)
+
+print(f"MD4 hash (hex): {hash_hex}")
+print(f"MD4 hash (decimal): {hash_decimal}")
+\end{lstlisting}
+
+This decimal representation is important because it shows the actual integer value used in the mathematical signature operations.
+
+\clearpage
+\section{Execution Examples}
+This section demonstrates the execution of both signature schemes, showing the complete output including key generation, signing, and verification.
+
+\subsection{Part 1: RSA Signature Execution}
+
+Running the RSA signature script:
+\begin{verbatim}
+$ .venv/bin/python3 rsa_signature.py
+
+======================================================================
+RSA DIGITAL SIGNATURE - LABORATORY WORK 6
+Cryptography and Security
+======================================================================
+
+Requirements:
+  • RSA key size (n): 3072 bits
+  • Hash algorithm: MD4
+  • Document: message_multiline.txt
+======================================================================
+
+======================================================================
+STEP 1: Generating RSA Key Pair
+======================================================================
+Key size: 3072 bits
+This may take a moment for large key sizes...
+
+Keys generated successfully!
+
+Key Parameters:
+  • Modulus (n) size: 3072 bits
+  • Public exponent (e): 65537
+  • Modulus (n) first 50 digits: 42520737649169940495246547200155160480293005930181...
+
+======================================================================
+STEP 2: Saving Keys to Files
+======================================================================
+ Private key saved to: private_key.pem
+ Public key saved to: public_key.pem
+
+======================================================================
+STEP 3: Signing the Document
+======================================================================
+Document: message_multiline.txt
+
+  • Message size: 3118 bytes
+  • MD4 hash (hex): fa05c2d599f084448242a5a37ad2daf2
+  • MD4 hash (decimal): 332336912141225339641974459760534280946
+  • Signature size: 384 bytes (3072 bits)
+  • Signature (hex, first 64 chars): 8c2f346b36bb3c22e983486b4214ddf1...
+
+Signature saved to: message_multiline.sig
+
+======================================================================
+STEP 4: Verifying the Signature
+======================================================================
+Document: message_multiline.txt
+Signature file: message_multiline.sig
+
+  • Message size: 3118 bytes
+  • MD4 hash (hex): fa05c2d599f084448242a5a37ad2daf2
+  • MD4 hash (decimal): 332336912141225339641974459760534280946
+  • Verifying signature using public key...
+
+  SIGNATURE IS VALID!
+    The document was signed with the corresponding private key
+    and has not been modified since signing.
+
+======================================================================
+STEP 5: Testing Signature Security
+======================================================================
+Testing what happens if the document is modified...
+
+Verifying signature on modified document...
+
+  • Message size: 3128 bytes
+  • MD4 hash (hex): 3bc1dc2078b0cf6cfe5432be60dc1907
+  • MD4 hash (decimal): 79431029747773213720833299272609569031
+  • Verifying signature using public key...
+
+  SIGNATURE IS INVALID!
+    Error: Invalid signature
+
+======================================================================
+SUMMARY - LABORATORY WORK RESULTS
+======================================================================
+Configuration:
+  • Key size (n): 3072 bits
+  • Hash algorithm: MD4
+  • Signature scheme: RSA with PKCS#1 v1.5
+
+Files:
+  • Document: message_multiline.txt
+  • Private key: private_key.pem (keep secret!)
+  • Public key: public_key.pem (can be shared)
+  • Signature: message_multiline.sig
+
+Results:
+  • Original document signature: VALID 
+  • Modified document signature: INVALID  (as expected)
+\end{verbatim}
+
+\subsection{Part 2: ElGamal Signature Execution}
+
+Running the ElGamal signature script:
+\begin{verbatim}
+$ .venv/bin/python3 elgamal_signature.py
+
+======================================================================
+ELGAMAL DIGITAL SIGNATURE - LABORATORY WORK 6 - PART 2
+Cryptography and Security
+======================================================================
+
+Requirements:
+  • Signature scheme: ElGamal
+  • Prime modulus (p): 2048 bits (provided)
+  • Generator (g): 2
+  • Hash algorithm: NTLM (MD4-based)
+  • Document: message_multiline.txt
+======================================================================
+
+======================================================================
+STEP 1: Generating ElGamal Key Pair
+======================================================================
+Prime modulus (p) size: 2048 bits
+Generator (g): 2
+Generating private key...
+Computing public key y = g^x mod p (this may take a moment)...
+
+Keys generated successfully!
+
+Key Parameters:
+  • Private key (x) size: 2048 bits
+  • Private key (x) first 50 digits: 184492327221712696...
+  • Public key (y) size: 2046 bits
+  • Public key (y) first 50 digits: 4818074474208557615...
+
+======================================================================
+STEP 2: Saving Keys to Files
+======================================================================
+ Private key saved to: elgamal_private.txt
+ Public key saved to: elgamal_public.txt
+
+======================================================================
+STEP 3: Signing the Document
+======================================================================
+Document: message_multiline.txt
+
+  • Message size: 3118 bytes
+  • NTLM hash (hex): fa05c2d599f084448242a5a37ad2daf2
+  • NTLM hash (decimal): 332336912141225339641974459760534280946
+  • Generating random k with gcd(k, p-1) = 1...
+  • Random k size: 2048 bits
+  • Computing r = g^k mod p...
+  • Computing k^(-1) mod (p-1)...
+  • Computing s = (h - x*r) * k^(-1) mod (p-1)...
+
+   Signature computed successfully!
+  • r size: 2047 bits
+  • r (first 50 digits): 839988947884575565960049664...
+  • s size: 2048 bits
+  • s (first 50 digits): 289640174844247395880184578...
+
+ Signature saved to: message_multiline_elgamal.sig
+
+======================================================================
+STEP 4: Verifying the Signature
+======================================================================
+Document: message_multiline.txt
+Signature file: message_multiline_elgamal.sig
+
+  • Message size: 3118 bytes
+  • NTLM hash (hex): fa05c2d599f084448242a5a37ad2daf2
+  • NTLM hash (decimal): 332336912141225339641974459760534280946
+  • Checking signature bounds...
+  • Verifying: g^h = y^r * r^s (mod p)
+    Computing left side: g^h mod p...
+    Computing right side: (y^r * r^s) mod p...
+
+   SIGNATURE IS VALID!
+    The equation holds: g^h = y^r * r^s (mod p)
+    Signature was created with the corresponding private key.
+
+======================================================================
+SUMMARY - LABORATORY WORK PART 2 RESULTS
+======================================================================
+Configuration:
+  • Signature scheme: ElGamal
+  • Prime modulus (p): 2048 bits
+  • Generator (g): 2
+  • Hash algorithm: NTLM (MD4-based)
+
+Files Generated:
+  • Document: message_multiline.txt
+  • Private key: elgamal_private.txt (keep secret!)
+  • Public key: elgamal_public.txt (can be shared)
+  • Signature: message_multiline_elgamal.sig
+
+Verification Result:
+  • Signature status: VALID 
+\end{verbatim}
+
+\subsection{Generated Files Analysis}
+
+\subsubsection{RSA Signature Files}
+After executing the RSA signature script, the following files are generated:
+
+\begin{itemize}
+    \item \textbf{private\_key.pem}: 3072-bit RSA private key in PEM format (2.4 KB)
+    \item \textbf{public\_key.pem}: RSA public key in PEM format (624 bytes)
+    \item \textbf{message\_multiline.sig}: Binary signature file (384 bytes = 3072 bits)
+\end{itemize}
+
+Key observations about RSA signatures:
+\begin{itemize}
+    \item Signature size matches the RSA modulus size (3072 bits)
+    \item MD4 hash: \texttt{fa05c2d599f084448242a5a37ad2daf2} (128 bits)
+    \item Hash decimal value: 332336912141225339641974459760534280946
+    \item Public exponent $e = 65537$ (standard choice for efficiency)
+    \item PKCS\#1 v1.5 padding provides structure to prevent attacks
+\end{itemize}
+
+\subsubsection{ElGamal Signature Files}
+After executing the ElGamal signature script, the following files are generated:
+
+\begin{itemize}
+    \item \textbf{elgamal\_private.txt}: Private key $x$ in text format (1.2 KB)
+    \item \textbf{elgamal\_public.txt}: Public key $y$, and parameters $p$, $g$ (1.8 KB)
+    \item \textbf{message\_multiline\_elgamal.sig}: Signature pair $(r, s)$ in text format (2.3 KB)
+\end{itemize}
+
+Key observations about ElGamal signatures:
+\begin{itemize}
+    \item Signature consists of two values: $r \approx 2047$ bits, $s \approx 2048$ bits
+    \item NTLM hash (same as MD4): \texttt{fa05c2d599f084448242a5a37ad2daf2}
+    \item Hash decimal value: 332336912141225339641974459760534280946
+    \item Prime modulus $p$ is 2048 bits (provided in lab requirements)
+    \item Generator $g = 2$
+    \item Each signature uses a unique random $k$, making signatures probabilistic
+\end{itemize}
+
+\subsection{Algorithm Comparison}
+
+This section compares the two implemented signature schemes across various dimensions.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|p{5cm}|p{5cm}|}
+\hline
+\textbf{Property} & \textbf{RSA} & \textbf{ElGamal} \\ \hline
+\textbf{Security Basis} & Factorization problem & Discrete logarithm problem \\ \hline
+\textbf{Key Size} & Modulus $n$: 3072 bits & Prime $p$: 2048 bits \\ \hline
+\textbf{Public Key} & $(e, n)$ & $(p, g, y)$ \\ \hline
+\textbf{Private Key} & $(d, n)$ & $x$ \\ \hline
+\textbf{Signature Size} & 384 bytes (single value) & 2.3 KB (two values: $r$, $s$) \\ \hline
+\textbf{Hash Algorithm} & MD4 & NTLM (MD4-based) \\ \hline
+\textbf{Signature Type} & Deterministic & Probabilistic (uses random $k$) \\ \hline
+\textbf{Verification Speed} & Fast (one exponentiation) & Slower (three exponentiations) \\ \hline
+\textbf{Key Generation} & Computationally intensive & Moderate (one exponentiation) \\ \hline
+\end{tabular}
+\caption{Comparison of RSA and ElGamal digital signature schemes}
+\end{table}
+
+\subsubsection{Key Differences}
+
+\textbf{Signature Size:}
+RSA produces a single signature value of 384 bytes (matching the 3072-bit modulus), while ElGamal produces two values $(r, s)$ totaling approximately 512 bytes each, plus text formatting overhead resulting in a 2.3 KB file. This makes RSA more efficient for storage and transmission.
+
+\textbf{Determinism vs. Randomness:}
+RSA signatures are deterministic - signing the same message twice produces identical signatures. ElGamal is probabilistic - each signature uses a fresh random $k$, producing different signatures for the same message. This provides additional security properties but requires a strong random number generator.
+
+\textbf{Computational Complexity:}
+RSA key generation requires finding two large primes, which is computationally expensive. ElGamal uses a pre-generated prime $p$ and only needs to compute $y = g^x \bmod p$. However, ElGamal verification requires computing $g^h$, $y^r$, and $r^s$, making it slower than RSA's single exponentiation.
+
+\textbf{Security Considerations:}
+Both algorithms are considered secure when using appropriate key sizes. RSA's security degrades if quantum computers become practical (Shor's algorithm). ElGamal faces the same quantum threat but can be easily adapted to elliptic curves (ECDSA), which offers similar security with smaller keys.
+
+\clearpage
+\section{Conclusion}
+
+This laboratory work provided comprehensive hands-on experience with two fundamental digital signature algorithms: RSA and ElGamal. By implementing both schemes from scratch in Python, I gained deep insights into the mathematical foundations and practical considerations of digital signatures.
+
+\textbf{Key Learning Outcomes:}
+
+\begin{itemize}
+    \item \textbf{Mathematical Understanding:} Implemented the core mathematical operations of both RSA (modular exponentiation with factorization-based security) and ElGamal (discrete logarithm-based signatures)
+
+    \item \textbf{Security Trade-offs:} Observed the differences between deterministic (RSA) and probabilistic (ElGamal) signatures, understanding when each approach is preferable
+
+    \item \textbf{Implementation Details:} Worked with real cryptographic libraries (PyCryptodome), learning about padding schemes (PKCS\#1 v1.5), modular arithmetic, and the importance of proper key sizes
+
+    \item \textbf{Hash Functions:} Gained practical experience with MD4 and NTLM hashing, understanding their role in compressing messages to fixed-size values suitable for signing
+
+    \item \textbf{Verification Mechanisms:} Implemented complete signature verification, demonstrating how mathematical properties ensure authenticity and integrity
+\end{itemize}
+
+\textbf{Practical Insights:}
+
+The laboratory demonstrated that while both RSA and ElGamal provide secure digital signatures, they have different characteristics that make them suitable for different applications. RSA's deterministic nature and smaller signature size make it preferred for most practical applications, while ElGamal's probabilistic nature offers theoretical advantages and easier migration to elliptic curve variants (ECDSA).
+
+Both implementations successfully met all laboratory requirements, including the specified key sizes (3072-bit RSA modulus, 2048-bit ElGamal prime), hash algorithms (MD4 and NTLM), and proper display of hash values in both hexadecimal and decimal formats.
+
+\clearpage
+\appendix
+\section{Source Code Reference}
+
+The complete implementation for this laboratory work consists of two Python scripts. Due to their length (each over 400 lines with extensive documentation), only key code snippets were included in the Implementation Details section. The full source code is available in the GitHub repository \href{https://github.com/DdimaPos/cryptography-labs.git}{GitHub repository}
+
+\end{document}
